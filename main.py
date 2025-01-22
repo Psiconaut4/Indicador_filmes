@@ -5,44 +5,37 @@ api_key = '0e823fa4f05de457b82c68d49a60dbb3'
 analyzer = SentimentIntensityAnalyzer()
 
 
-def suggest_movies():
-    phrase = str(input('Como você está se sentindo hoje?: '))
+def suggest_movies(i):
+    phrase = i
     emotion = analyzer.polarity_scores(phrase)['compound']
 
-
-    if emotion >= -0.5:
-        genre = '18'  # Drama
-    elif emotion < 0:
-        genre = '35'  # Comédia
-    elif emotion < 0.5:
-        genre = '10749'  # Romance
-    else:
+    if emotion <= -0.5:
         genre = '27'  # horror
+    elif emotion >= 0.5 and emotion < 0.6:
+        genre = '35'  # Comédia
+    elif emotion > 0.6 and emotion < 1.0:
+        genre = '10749'  # Romance
+    elif emotion > -0.5 and emotion < 0.3:
+        genre = '18'  # drama
 
     url = f'https://api.themoviedb.org/3/discover/movie?api_key={api_key}&sort_by=popularity.desc&with_genres={genre}&vote_count.gte=4'
     response = requests.get(url).json()
 
+
     if response['results']:
+
+        # pegando os titulos
         titles = [result['title'] for result in response['results'][:3]]
-        print('Recomendo os seguintes filmes para você:')
-        for title in titles:
-            print(f' - {title}')
-    else:
-        print('Não encontrei nenhuma sugestão de filme para você.')
 
-def chatbot():
-    print('Olá! Sou um chat de sugestões de filmes. como posso te ajudar hoje?: ')
+        # pegando as datas
+        release_date = [result['release_date'] for result in response['results'][:3]]
 
-    while True:
-        try:
-            response = input('digite filme para sugestões, ou sair para sair: ').lower()
-            if 'filme' in response:
-                suggest_movies()
-            elif 'tchau' in response or 'sair' in response:
-                print('Até a próxima!')
-                break
-            else:
-                print('Desculpe, não entendi o que você quis dizer. ')
-        except KeyboardInterrupt:
-            break
-chatbot()
+        # pegando os votos
+        vote_average = [result['vote_average'] for result in response['results'][:3]]
+
+        # pegando os posters/ definindo a string do prefixo
+        prefix = 'https://media.themoviedb.org/t/p/w220_and_h330_face/'
+        poster_path = [prefix + result['poster_path'].lstrip('/') for result in response['results'][:3]]
+
+        # retornando os resultados como lista
+        return [titles, poster_path, release_date, vote_average]
